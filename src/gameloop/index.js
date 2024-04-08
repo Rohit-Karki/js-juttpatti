@@ -1,7 +1,10 @@
 // Game loop code
-window.requestAnimationFrame(gameLoop);
+while(!isGameFinished(state)){
+    
+}
+
 
 function gameLoop() {
     // draw();
-    window.requestAnimationFrame(gameLoop);
+    
 }

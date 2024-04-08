@@ -1,5 +1,10 @@
 Reactjs Juttpatti Game
 
 First Phase
+    Game logic,
+    State management
+    Networking
+    UI developement
 
-Game logic, state management, networking and UI developement
+Second Phase
+    Game Settings and Menu
