@@ -2,7 +2,7 @@ import { StatusBar } from "expo-status-bar";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { ImageBackground, Image, StyleSheet, Text, View } from "react-native";
 import { Provider } from "react-redux";
-import { store } from "./src/store/index";
+import { store } from "./src/gamelogic/redux/GameStore";
 
 async function changeScreenOrientation() {
   await ScreenOrientation.lockAsync(
@@ -20,7 +20,7 @@ export default function App() {
           resizeMode="cover"
           style={styles.image}
         >
-          <Text style={styles.text}>Inside lllllllll</Text>
+          <Image source={require("./assets/sprites/Clovers_2_white.png")} style={styles.cardImage} />
         </ImageBackground>
         <StatusBar hidden />
       </View>
@@ -39,4 +39,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
   },
+  cardImage:{
+    width: "200px",
+    height: "200px",
+  }
 });

@@ -6,27 +6,29 @@ import {
   leaveRoom,
   initSocket,
   connectionLost,
-} from "@/data/Features/socket/socketSlice";
-import { setPrice } from "@/data/Features/price/priceSlice";
+} from "../slices/socketSlice";
+
+import { initGame, pickCard, dropCard } from "../slices/cardSlice";
 // Socket Factory
-import SocketFactory from "@/lib/SocketFactory";
-// Types
-import { IPriceMessage } from "@/types/socket";
- 
-enum SocketEvent {
-  Connect = "connect",
-  Disconnect = "disconnect",
+import SocketFactory from "../../SocketFactory";
+
+const SocketEvent = {
+  Connect: "connect",
+  Disconnect: "disconnect",
   // Emit events
-  JoinRoom = "join-room",
-  LeaveRoom = "leave-room",
+  JoinRoom: "join-room",
+  LeaveRoom: "leave-room",
   // On events
-  Error = "err",
-  Price = "price",
-}
- 
+  Error: "err",
+
+  InitGame: "init-game",
+  PickCard: "pick-card",
+  DropCard: "drop-card",
+};
+
 const socketMiddleware = (store) => {
   let socket;
- 
+
   return (next) => (action) => {
     // Middleware logic for the `initSocket` action
     if (initSocket.match(action)) {
@@ -34,28 +36,28 @@ const socketMiddleware = (store) => {
         // Client-side-only code
         // Create/ Get Socket Socket
         socket = SocketFactory.create();
- 
+
         socket.socket.on(SocketEvent.Connect, () => {
           store.dispatch(connectionEstablished());
         });
- 
+
         // handle all Error events
         socket.socket.on(SocketEvent.Error, (message) => {
           console.error(message);
         });
- 
+
         // Handle disconnect event
         socket.socket.on(SocketEvent.Disconnect, (reason) => {
           store.dispatch(connectionLost());
         });
- 
-        // Handle all price events
-        socket.socket.on(SocketEvent.Price, (priceMessage: IPriceMessage) => {
-          store.dispatch(setPrice(priceMessage.value));
+
+        // Handle pickCard event
+        socket.socket.on(SocketEvent.Disconnect, (reason) => {
+          store.dispatch(connectionLost());
         });
       }
     }
- 
+
     // handle the joinRoom action
     if (joinRoom.match(action) && socket) {
       let room = action.payload.room;
@@ -64,7 +66,7 @@ const socketMiddleware = (store) => {
       // Then Pass on to the next middleware to handle state
       // ...
     }
- 
+
     // handle leaveRoom action
     if (leaveRoom.match(action) && socket) {
       let room = action.payload.room;
@@ -72,8 +74,30 @@ const socketMiddleware = (store) => {
       // Then Pass on to the next middleware to handle state
       // ...
     }
+
+    // Handle the pick Card to the server
+    if (initGame.match(action) && socket) {
+      // let room = action.payload.room;
+      let gameState = action.payload.gameState;
+      socket.socket.emit(SocketEvent.PickCard, gameState);
+    }
+
+    // Handle the pick Card to the server
+    if (pickCard.match(action) && socket) {
+      // let room = action.payload.room;
+      let gameState = action.payload.pickedCardState;
+      socket.socket.emit(SocketEvent.PickCard, room, gameState);
+    }
+
+    // Handle the drop Card to the server
+    if (dropCard.match(action) && socket) {
+      let room = action.payload.room;
+      let droppedCardState = action.payload.droppedCardState;
+      socket.socket.emit(SocketEvent.PickCard, room, droppedCardState);
+    }
+
     next(action);
   };
 };
- 
+
 export default socketMiddleware;
