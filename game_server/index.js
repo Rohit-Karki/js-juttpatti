@@ -19,8 +19,7 @@ function gameStart(store) {
 
 function nextTurn() {
   // Determine the next player based on game rules
-  // ...
-  // io.emit('gameState', gameState);
+  io.emit("gameState", gameState);
 }
 
 // export default {
@@ -48,6 +47,41 @@ const io = new Server(httpServer, {
   cors: {
     origin: ["http://localhost:8081"],
   },
+});
+
+// Store active rooms and their players
+const rooms = new Map();
+
+// REST API endpoint to create/join a room
+app.post("/api/rooms/join", (req, res) => {
+  const { userId, userName } = req.body;
+
+  if (!userId || !userName) {
+    return res.status(400).json({ error: "userId and userName are required" });
+  }
+
+  // Find an available room or create a new one
+  let availableRoom = null;
+  for (const [roomId, room] of rooms.entries()) {
+    if (room.players.length < 4) {
+      availableRoom = roomId;
+      break;
+    }
+  }
+
+  if (!availableRoom) {
+    availableRoom = `room_${Date.now()}`;
+    rooms.set(availableRoom, {
+      players: [],
+      status: "waiting",
+    });
+  }
+
+  // Return the room information to the client
+  res.json({
+    roomId: availableRoom,
+    status: "success",
+  });
 });
 
 io.on("connection", (socket) => {
@@ -78,7 +112,44 @@ io.on("connection", (socket) => {
   * @returns unit
   */
 
-  socket.on("create_room", (room_id, initial_state) => {});
+  // In place of client making a room server responds with the room info and client joins that room
+  // socket.on("create_room", (room_id, initial_state) => {});
+
+  // Handle room joining
+  socket.on("join_room", ({ roomId, userId, userName }) => {
+    const room = rooms.get(roomId);
+
+    if (!room) {
+      socket.emit("error", { message: "Room not found" });
+      return;
+    }
+
+    // Add player to room
+    if (!room.players.find((p) => p.userId === userId)) {
+      room.players.push({
+        userId,
+        userName,
+        socketId: socket.id,
+      });
+    }
+
+    socket.join(roomId);
+
+    // Notify all clients in the room about the new player
+    io.to(roomId).emit("player_joined", {
+      players: room.players,
+      roomId,
+    });
+
+    // If room is full (2 players), start the game
+    if (room.players.length === 2) {
+      room.status = "starting";
+      io.to(roomId).emit("game_starting", {
+        players: room.players,
+        roomId,
+      });
+    }
+  });
 });
 
 httpServer.listen(3000, () => {

@@ -10,7 +10,6 @@ const gameSlice = createSlice({
   reducers: {
     initGame: (state) => {
       
-
       return;
     },
     pickCard: (state) => {
