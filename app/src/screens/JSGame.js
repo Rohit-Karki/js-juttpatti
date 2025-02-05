@@ -8,18 +8,21 @@ import {
   Button,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { useSelector } from "react-redux";
-import { socket } from "./../socket";
-import Card from "./Card";
+import { useDispatch, useSelector } from "react-redux";
+import { socket } from "../socket";
+import Card from "../gamelogic/Card";
 import { ImagesAssets } from "../../assets";
+import { initGame } from "../gamelogic/redux/slices/cardSlice";
 
 export default function JSGame() {
+  const dispatch = useDispatch();
   const [isConnected, setIsConnected] = useState(false);
   const [transport, setTransport] = useState("N/A");
 
   const state = useSelector((state) => {
     return state.game;
   });
+
   useEffect(() => {
     if (socket.connected) {
       onConnect();
@@ -33,6 +36,8 @@ export default function JSGame() {
       socket.io.engine.on("upgrade", (transport) => {
         setTransport(transport.name);
       });
+
+      socket.emit("game_start");
     }
     function onDisconnect() {
       setIsConnected(false);
@@ -42,6 +47,10 @@ export default function JSGame() {
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
 
+    socket.on("initial_state", (value) => {
+      setInitialState(value);
+    });
+
     console.log(state);
     return () => {
       socket.off("connect", onConnect);
@@ -49,10 +58,13 @@ export default function JSGame() {
     };
   }, []);
 
-  function sendInitialState() {
-    socket.emit("hello", "world");
+  function setInitialState(initial_state) {
+    // get the initial state from the server and use that to
+    dispatch(initGame(initial_state));
 
-    socket.emit("initial_state", state);
+    // socket.emit("hello", "world");
+
+    // socket.emit("initial_state", state);
   }
 
   return (
@@ -66,8 +78,15 @@ export default function JSGame() {
       <View style={styles.cards}>
         <Button
           onPress={() => {
-            console.log("Board");
-            sendInitialState();
+            console.log("pick card");
+            socket.emit("pick_card", {
+              playerId: "rohit123",
+              pickedCard: {
+                number: 4,
+                type: "spades",
+                color: "red",
+              },
+            });
           }}
         >
           <Card imageSrc={ImagesAssets.Clovers_4_white} />

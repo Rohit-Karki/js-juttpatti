@@ -1,8 +1,9 @@
 import { StyleSheet, Dimensions } from "react-native";
+import { NavigationContainer } from "@react-navigation/native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Provider } from "react-redux";
 import { store } from "./src/gamelogic/redux/GameStore";
-import JSGame from "./src/gamelogic/JSGame";
+import RootStack from "./src/screens/RootStack";
 
 async function changeScreenOrientation() {
   await ScreenOrientation.lockAsync(
@@ -11,11 +12,13 @@ async function changeScreenOrientation() {
 }
 
 export default function App() {
-  changeScreenOrientation();
+  // changeScreenOrientation();
   return (
     <GestureHandlerRootView>
       <Provider store={store}>
-        <JSGame />
+        <NavigationContainer>
+          <RootStack />
+        </NavigationContainer>
       </Provider>
     </GestureHandlerRootView>
   );

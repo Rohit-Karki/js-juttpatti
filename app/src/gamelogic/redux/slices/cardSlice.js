@@ -8,9 +8,9 @@ const gameSlice = createSlice({
   initialState,
   // Reducers: Functions we can call on the store
   reducers: {
-    initGame: (state) => {
-      
-      return;
+    initGame: (state, action) => {
+      state = action.payload;
+      return state;
     },
     pickCard: (state) => {
       const { playerId, card } = action.payload;

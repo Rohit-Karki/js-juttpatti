@@ -1,9 +1,79 @@
 import { useState, useEffect } from "react";
 import { View, Text, StyleSheet, Animated } from "react-native";
 import { Coins, Wifi } from "lucide-react-native";
+import PlayerCard from "../components/cards/PlayerCard";
 
-export default function MultiplayerLobby() {
+export default function GameLobby() {
   const [searchingDots] = useState(new Animated.Value(0));
+  const socketListenerForPlayers = () => {
+    // Connect to Socket.IO server
+    connectToSocket();
+
+    // Socket event listeners
+    socket.on("player_joined", ({ players: newPlayers }) => {
+      setPlayers(newPlayers);
+    });
+
+    socket.on("player_left", ({ players: remainingPlayers }) => {
+      setPlayers(remainingPlayers);
+    });
+
+    socket.on("game_starting", ({ players: gamePlayers }) => {
+      Alert.alert("Game is starting!", "All players have joined.");
+      // Navigate to game screen or start game logic here
+    });
+
+    socket.on("error", ({ message }) => {
+      Alert.alert("Error", message);
+    });
+
+    // Cleanup on unmount
+    return () => {
+      socket.off("player_joined");
+      socket.off("player_left");
+      socket.off("game_starting");
+      socket.off("error");
+    };
+  };
+
+  useEffect(() => {
+    // Join room API call
+    const joinRoom = async () => {
+      try {
+        const response = await fetch(
+          "http://your-server-url:3001/api/rooms/join",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              userId: "user_" + Math.random().toString(36).substr(2, 9),
+              userName: "Player " + Math.floor(Math.random() * 1000),
+            }),
+          }
+        );
+
+        const data = await response.json();
+
+        if (data.status === "success") {
+          setRoomId(data.roomId);
+          // Join the Socket.IO room
+          socket.emit("join_room", {
+            roomId: data.roomId,
+            userId: "user_" + Math.random().toString(36).substr(2, 9),
+            userName: "Player " + Math.floor(Math.random() * 1000),
+          });
+
+          socketListenerForPlayers();
+        }
+      } catch (error) {
+        Alert.alert("Error", "Failed to join room");
+      }
+    };
+
+    joinRoom();
+  }, []);
 
   useEffect(() => {
     Animated.loop(
@@ -20,12 +90,12 @@ export default function MultiplayerLobby() {
         }),
       ])
     ).start();
-  }, [searchingDots]); // Added searchingDots to the dependency array
+  }, [searchingDots]);
 
-  const dots = searchingDots.interpolate({
-    inputRange: [0, 1, 2, 3],
-    outputRange: ["", ".", "..", "..."],
-  });
+  // const dots = searchingDots.interpolate({
+  //   inputRange: [0, 1, 2, 3],
+  //   outputRange: ["", ".", "..", "..."],
+  // });
 
   return (
     <View style={styles.container}>
@@ -63,7 +133,7 @@ export default function MultiplayerLobby() {
       <View style={styles.searchingContainer}>
         <Text style={styles.searchingText}>
           Searching for players
-          <Animated.Text>{dots}</Animated.Text>
+          {/* <Animated.Text>{dots}</Animated.Text> */}
         </Text>
       </View>
     </View>

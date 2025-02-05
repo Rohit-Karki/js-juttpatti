@@ -1,6 +1,8 @@
 import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import get_init_game_state from "./game_state/get_init_game_state.js";
+// const { get_init_game_state } = require("./game_state");
 
 function gameStart(store) {
   console.log("Let the Game begin");
@@ -86,9 +88,16 @@ app.post("/api/rooms/join", (req, res) => {
 
 io.on("connection", (socket) => {
   console.log(`connect: ${socket.id}`, socket.request.headers);
+  const data = get_init_game_state();
+
+  socket.emit("initial_state", data);
 
   socket.on("disconnect", () => {
     console.log(`disconnect: ${socket.id}`);
+  });
+
+  socket.on("pick_card", (action) => {
+    console.log(action);
   });
 
   /*
@@ -96,11 +105,6 @@ io.on("connection", (socket) => {
   */
   socket.on("hello", (arg) => {
     console.log(arg); // world
-  });
-
-  socket.on("initial_state", (value) => {
-    // console.log(`state: ${value}`);
-    console.log("state:", value);
   });
 
   /*

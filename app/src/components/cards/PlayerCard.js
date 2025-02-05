@@ -5,10 +5,7 @@ import { ImagesAssets } from "../../../assets";
 export default function PlayerCard({ name, score, avatar, isSearching }) {
   return (
     <View style={styles.container}>
-      <Image
-        source={ImagesAssets.Person_Icon + "?height=60&width=60"}
-        style={styles.avatar}
-      />
+      <Image source={ImagesAssets.Person_Icon} style={styles.avatar} />
       <Text style={styles.name}>{isSearching ? "Matching..." : name}</Text>
       {/* {score !== undefined && (
         <View style={styles.scoreContainer}>
@@ -30,8 +27,8 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
   },
   avatar: {
-    width: 40,
-    height: 40,
+    width: 300,
+    height: 300,
     borderRadius: 20,
     marginRight: 8,
   },
