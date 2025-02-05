@@ -2,7 +2,9 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
+  socketId: "",
   isConnected: false,
+  joinedRoomId: "",
   rooms: [],
 };
 
@@ -23,9 +25,10 @@ const socketSlice = createSlice({
     },
     joinRoom: (state, action) => {
       // After the required room is joined through middleware, we manage state here!
-      let rooms = action.payload.rooms;
-      state.rooms = state.rooms.concat(room);
-      return;
+      console.log(action);
+      const room = action.payload.roomId;
+      state.joinedRooms = room;
+      return state;
     },
   },
 });

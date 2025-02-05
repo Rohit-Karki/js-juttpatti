@@ -1,5 +1,6 @@
 import express from "express";
 import { createServer } from "http";
+import cors from "cors";
 import { Server } from "socket.io";
 import get_init_game_state from "./game_state/get_init_game_state.js";
 // const { get_init_game_state } = require("./game_state");
@@ -54,8 +55,12 @@ const io = new Server(httpServer, {
 // Store active rooms and their players
 const rooms = new Map();
 
+app.use(cors());
+app.use(express.json());
+
 // REST API endpoint to create/join a room
-app.post("/api/rooms/join", (req, res) => {
+app.post("/api/rooms/create", (req, res) => {
+  console.log("create room", req.body);
   const { userId, userName } = req.body;
 
   if (!userId || !userName) {
@@ -64,17 +69,17 @@ app.post("/api/rooms/join", (req, res) => {
 
   // Find an available room or create a new one
   let availableRoom = null;
-  for (const [roomId, room] of rooms.entries()) {
-    if (room.players.length < 4) {
-      availableRoom = roomId;
-      break;
-    }
-  }
+  // for (const [roomId, room] of rooms.entries()) {
+  //   if (room.players.length < 4) {
+  //     availableRoom = roomId;
+  //     break;
+  //   }
+  // }
 
   if (!availableRoom) {
     availableRoom = `room_${Date.now()}`;
     rooms.set(availableRoom, {
-      players: [],
+      players: [{ userId, userName }],
       status: "waiting",
     });
   }
@@ -121,6 +126,7 @@ io.on("connection", (socket) => {
 
   // Handle room joining
   socket.on("join_room", ({ roomId, userId, userName }) => {
+    console.log(roomId);
     const room = rooms.get(roomId);
 
     if (!room) {
@@ -138,15 +144,15 @@ io.on("connection", (socket) => {
     }
 
     socket.join(roomId);
-
+    console.log(room);
     // Notify all clients in the room about the new player
     io.to(roomId).emit("player_joined", {
       players: room.players,
       roomId,
     });
 
-    // If room is full (2 players), start the game
-    if (room.players.length === 2) {
+    // If room is full (4 players), start the game
+    if (room.players.length === 4) {
       room.status = "starting";
       io.to(roomId).emit("game_starting", {
         players: room.players,

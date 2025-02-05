@@ -2,16 +2,40 @@ import { useState, useEffect } from "react";
 import { View, Text, StyleSheet, Animated } from "react-native";
 import { Coins, Wifi } from "lucide-react-native";
 import PlayerCard from "../components/cards/PlayerCard";
+import { socket } from "../socket";
+import { useDispatch, useSelector } from "react-redux";
+import { joinRoom } from "../gamelogic/redux/slices/socketSlice";
 
 export default function GameLobby() {
+  const dispatch = useDispatch();
   const [searchingDots] = useState(new Animated.Value(0));
+  const userData = useSelector((state) => {
+    return state.user;
+  });
+
+  const gameData = useSelector((state) => state.game);
+  const socketData = useSelector((state) => state.socket);
+
+  console.log(gameData);
+  console.log(socketData);
+
+  const emitJoinRoom = (roomId, userId, userName) => {
+    console.log(roomId, userId, userName);
+    socket.emit("join_room", {
+      roomId,
+      userId,
+      userName,
+    });
+  };
   const socketListenerForPlayers = () => {
     // Connect to Socket.IO server
     connectToSocket();
 
     // Socket event listeners
     socket.on("player_joined", ({ players: newPlayers }) => {
-      setPlayers(newPlayers);
+      console.log("new player joined", players);
+
+      // setPlayers(newPlayers);
     });
 
     socket.on("player_left", ({ players: remainingPlayers }) => {
@@ -19,12 +43,12 @@ export default function GameLobby() {
     });
 
     socket.on("game_starting", ({ players: gamePlayers }) => {
-      Alert.alert("Game is starting!", "All players have joined.");
+      // Alert.alert("Game is starting!", "All players have joined.");
       // Navigate to game screen or start game logic here
     });
 
     socket.on("error", ({ message }) => {
-      Alert.alert("Error", message);
+      // Alert.alert("Error", message);
     });
 
     // Cleanup on unmount
@@ -38,41 +62,38 @@ export default function GameLobby() {
 
   useEffect(() => {
     // Join room API call
-    const joinRoom = async () => {
+    const mainjoinRoom = async () => {
       try {
-        const response = await fetch(
-          "http://your-server-url:3001/api/rooms/join",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              userId: "user_" + Math.random().toString(36).substr(2, 9),
-              userName: "Player " + Math.floor(Math.random() * 1000),
-            }),
-          }
-        );
+        const response = await fetch("http://localhost:3000/api/rooms/create", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId: userData.userId,
+            userName: userData.userName,
+          }),
+        });
 
         const data = await response.json();
+        dispatch(joinRoom({ roomId: data.roomId }));
+
+        console.log(data);
 
         if (data.status === "success") {
-          setRoomId(data.roomId);
+          console.log("join room", data.roomId);
           // Join the Socket.IO room
-          socket.emit("join_room", {
-            roomId: data.roomId,
-            userId: "user_" + Math.random().toString(36).substr(2, 9),
-            userName: "Player " + Math.floor(Math.random() * 1000),
-          });
+          console.log(userData);
+          emitJoinRoom(data.roomId, userData.userName, userData.userId);
 
           socketListenerForPlayers();
         }
       } catch (error) {
-        Alert.alert("Error", "Failed to join room");
+        // Alert.alert("Error", "Failed to join room");
       }
     };
 
-    joinRoom();
+    mainjoinRoom();
   }, []);
 
   useEffect(() => {
@@ -116,7 +137,7 @@ export default function GameLobby() {
 
       <View style={styles.playersContainer}>
         <PlayerCard
-          name="Sanket L"
+          name={userData.userName}
           score={5}
           avatar="/placeholder.svg?height=60&width=60"
         />
@@ -127,12 +148,15 @@ export default function GameLobby() {
             <View style={styles.searchIndicator} />
           </View>
         </View>
-        <PlayerCard name="Waiting..." isSearching={true} />
+        <PlayerCard
+          name={`Waiting in room ...${socketData.joinedRoomId}`}
+          isSearching={true}
+        />
       </View>
 
       <View style={styles.searchingContainer}>
         <Text style={styles.searchingText}>
-          Searching for players
+          Waiting in room {socketData.joinedRoomId}
           {/* <Animated.Text>{dots}</Animated.Text> */}
         </Text>
       </View>

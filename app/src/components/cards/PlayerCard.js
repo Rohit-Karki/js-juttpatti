@@ -5,7 +5,10 @@ import { ImagesAssets } from "../../../assets";
 export default function PlayerCard({ name, score, avatar, isSearching }) {
   return (
     <View style={styles.container}>
-      <Image source={ImagesAssets.Person_Icon} style={styles.avatar} />
+      <Image
+        source={ImagesAssets.Person_Icon}
+        style={styles.avatar}
+      />
       <Text style={styles.name}>{isSearching ? "Matching..." : name}</Text>
       {/* {score !== undefined && (
         <View style={styles.scoreContainer}>

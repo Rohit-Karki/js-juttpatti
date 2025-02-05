@@ -20,7 +20,7 @@ export default function HomeScreen() {
   const menuItems = [
     {
       id: "hotspot",
-      title: "HOT\nSPOT",
+      title: "Create Room",
       //   icon: <Wifi size={24} color="white" />,
       color: "#FF6B6B",
       onPress: () => navigation.navigate("GameLobby"),
@@ -34,10 +34,10 @@ export default function HomeScreen() {
     },
     {
       id: "single",
-      title: "SINGLE\nPLAYER",
+      title: "Join Room",
       //   icon: <Robot size={24} color="white" />,
       color: "#339AF0",
-      onPress: () => navigation.navigate("SinglePlayer"),
+      onPress: () => navigation.navigate("JoinRoom"),
     },
     {
       id: "multi",
