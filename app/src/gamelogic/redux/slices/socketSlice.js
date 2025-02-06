@@ -5,6 +5,7 @@ const initialState = {
   socketId: "",
   isConnected: false,
   joinedRoomId: "",
+  joinedInRoomPlayers: [],
   rooms: [],
 };
 
@@ -25,16 +26,24 @@ const socketSlice = createSlice({
     },
     joinRoom: (state, action) => {
       // After the required room is joined through middleware, we manage state here!
-      console.log(action);
+      console.log("joined room in slice");
       const room = action.payload.roomId;
-      state.joinedRooms = room;
-      return state;
+      state.joinedRoomId = room;
+    },
+    pushUserToRoom: (state, action) => {
+      const players = action.payload.players;
+      state.joinedInRoomPlayers = players;
     },
   },
 });
 
 // Don't have to define actions, they are automatically generated
-export const { initSocket, connectionEstablished, connectionLost, joinRoom } =
-  socketSlice.actions;
+export const {
+  initSocket,
+  connectionEstablished,
+  connectionLost,
+  joinRoom,
+  pushUserToRoom,
+} = socketSlice.actions;
 // Export the reducer for this slice
 export default socketSlice.reducer;

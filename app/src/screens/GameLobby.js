@@ -1,10 +1,21 @@
 import { useState, useEffect } from "react";
-import { View, Text, StyleSheet, Animated } from "react-native";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Animated,
+  ScrollView,
+  Button,
+} from "react-native";
 import { Coins, Wifi } from "lucide-react-native";
 import PlayerCard from "../components/cards/PlayerCard";
-import { socket } from "../socket";
-import { useDispatch, useSelector } from "react-redux";
-import { joinRoom } from "../gamelogic/redux/slices/socketSlice";
+import { connectToSocket, socket } from "../socket";
+import {
+  joinRoom,
+  pushUserToRoom,
+} from "../gamelogic/redux/slices/socketSlice";
+import { initGame } from "../gamelogic/redux/slices/cardSlice";
 
 export default function GameLobby() {
   const dispatch = useDispatch();
@@ -15,9 +26,10 @@ export default function GameLobby() {
 
   const gameData = useSelector((state) => state.game);
   const socketData = useSelector((state) => state.socket);
+  const players = socketData.joinedInRoomPlayers;
 
   console.log(gameData);
-  console.log(socketData);
+  console.log(players);
 
   const emitJoinRoom = (roomId, userId, userName) => {
     console.log(roomId, userId, userName);
@@ -27,23 +39,26 @@ export default function GameLobby() {
       userName,
     });
   };
-  const socketListenerForPlayers = () => {
+  useEffect(() => {
     // Connect to Socket.IO server
     connectToSocket();
 
     // Socket event listeners
-    socket.on("player_joined", ({ players: newPlayers }) => {
+    socket.on("player_joined", ({ players }) => {
       console.log("new player joined", players);
 
-      // setPlayers(newPlayers);
+      dispatch(pushUserToRoom({ players: players }));
     });
 
     socket.on("player_left", ({ players: remainingPlayers }) => {
       setPlayers(remainingPlayers);
+      dispatch(pushUserToRoom({ player: remainingPlayers }));
     });
 
-    socket.on("game_starting", ({ players: gamePlayers }) => {
+    socket.on("initial_state", ({ initial_state }) => {
       // Alert.alert("Game is starting!", "All players have joined.");
+      console.log(initial_state);
+      dispatch(initGame({ initialState: initial_state }));
       // Navigate to game screen or start game logic here
     });
 
@@ -58,7 +73,12 @@ export default function GameLobby() {
       socket.off("game_starting");
       socket.off("error");
     };
-  };
+  }, []);
+
+  function startGameButtonClick() {
+    console.log("start the game", socketData.joinedRoomId);
+    socket.emit("game_start", socketData.joinedRoomId);
+  }
 
   useEffect(() => {
     // Join room API call
@@ -74,11 +94,7 @@ export default function GameLobby() {
             userName: userData.userName,
           }),
         });
-
         const data = await response.json();
-        dispatch(joinRoom({ roomId: data.roomId }));
-
-        console.log(data);
 
         if (data.status === "success") {
           console.log("join room", data.roomId);
@@ -86,13 +102,12 @@ export default function GameLobby() {
           console.log(userData);
           emitJoinRoom(data.roomId, userData.userName, userData.userId);
 
-          socketListenerForPlayers();
+          dispatch(joinRoom({ roomId: data.roomId }));
         }
       } catch (error) {
         // Alert.alert("Error", "Failed to join room");
       }
     };
-
     mainjoinRoom();
   }, []);
 
@@ -135,23 +150,49 @@ export default function GameLobby() {
         <Text style={styles.subtitle}>HIGH FIVE</Text>
       </View>
 
-      <View style={styles.playersContainer}>
-        <PlayerCard
-          name={userData.userName}
-          score={5}
-          avatar="/placeholder.svg?height=60&width=60"
-        />
-        <View style={styles.searchingIcon}>
-          <View style={styles.globeContainer}>
-            {/* You would replace this with an actual globe icon or animation */}
-            <View style={styles.globe} />
-            <View style={styles.searchIndicator} />
-          </View>
-        </View>
-        <PlayerCard
-          name={`Waiting in room ...${socketData.joinedRoomId}`}
-          isSearching={true}
-        />
+      <ScrollView style={styles.playersContainer}>
+        {players.map((player) => (
+          <PlayerCard
+            key={player.userId}
+            name={player.userName}
+            avatar="/placeholder.svg?height=60&width=60"
+            score={5}
+          />
+        ))}
+        {/* {players.length < 2 && (
+          <PlayerCard name="Waiting for player..." isSearching={true} />
+        )} */}
+      </ScrollView>
+
+      <View style={styles.searchingContainer}>
+        <Text style={styles.searchingText}>
+          {players.length < 2 ? (
+            <>
+              Searching for players
+              {/* <Animated.Text>{dots}</Animated.Text> */}
+            </>
+          ) : (
+            "Game starting..."
+          )}
+        </Text>
+      </View>
+
+      <View style={styles.searchingContainer}>
+        <Text style={styles.searchingText}>
+          {players.length == 4 ? (
+            <>
+              <View style={styles.container}>
+                <Button
+                  title="Start Game"
+                  onPress={() => {
+                    startGameButtonClick();
+                  }}
+                />
+              </View>
+              {/* <Animated.Text>{dots}</Animated.Text> */}
+            </>
+          ) : null}
+        </Text>
       </View>
 
       <View style={styles.searchingContainer}>
@@ -194,7 +235,7 @@ const styles = StyleSheet.create({
   },
   titleContainer: {
     alignItems: "center",
-    marginBottom: 40,
+    marginBottom: 20,
   },
   title: {
     fontSize: 32,
@@ -210,34 +251,8 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   playersContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
+    flex: 1,
     marginBottom: 20,
-  },
-  searchingIcon: {
-    marginHorizontal: 20,
-  },
-  globeContainer: {
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  globe: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: "#4CAF50",
-  },
-  searchIndicator: {
-    position: "absolute",
-    bottom: -5,
-    right: -5,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: "#fff",
   },
   searchingContainer: {
     alignItems: "center",

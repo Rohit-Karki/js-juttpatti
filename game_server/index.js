@@ -5,21 +5,6 @@ import { Server } from "socket.io";
 import get_init_game_state from "./game_state/get_init_game_state.js";
 // const { get_init_game_state } = require("./game_state");
 
-function gameStart(store) {
-  console.log("Let the Game begin");
-
-  const io = new Server().attach(8090);
-
-  store.subscribe(() => io.emit("state-change", store.getState().toJS()));
-
-  io.on("connection", (socket) => {
-    console.log("New Connection");
-
-    socket.emit("state-change", store.getState().toJS());
-    socket.on("action", store.dispatch.bind(store));
-  });
-}
-
 function nextTurn() {
   // Determine the next player based on game rules
   io.emit("gameState", gameState);
@@ -69,19 +54,14 @@ app.post("/api/rooms/create", (req, res) => {
 
   // Find an available room or create a new one
   let availableRoom = null;
-  // for (const [roomId, room] of rooms.entries()) {
-  //   if (room.players.length < 4) {
-  //     availableRoom = roomId;
-  //     break;
-  //   }
-  // }
 
   if (!availableRoom) {
     availableRoom = `room_${Date.now()}`;
     rooms.set(availableRoom, {
-      players: [{ userId, userName }],
+      players: [],
       status: "waiting",
     });
+    console.log(rooms);
   }
 
   // Return the room information to the client
@@ -94,8 +74,6 @@ app.post("/api/rooms/create", (req, res) => {
 io.on("connection", (socket) => {
   console.log(`connect: ${socket.id}`, socket.request.headers);
   const data = get_init_game_state();
-
-  socket.emit("initial_state", data);
 
   socket.on("disconnect", () => {
     console.log(`disconnect: ${socket.id}`);
@@ -159,6 +137,14 @@ io.on("connection", (socket) => {
         roomId,
       });
     }
+  });
+
+  socket.on("game_start", (roomId) => {
+    console.log("game starting initial state");
+    // broadcast the inital state
+    const playersInRoomId = rooms.get(roomId).players;
+    const initial_state = get_init_game_state(4, playersInRoomId);
+    io.to(roomId).emit("initial_state", { initial_state });
   });
 });
 

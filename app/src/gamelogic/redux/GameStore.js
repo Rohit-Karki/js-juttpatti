@@ -10,7 +10,7 @@ export const store = configureStore({
     game: gameReducer,
     user: userReducer,
   },
-  middleware(getDefaultMiddleware) {
-    return getDefaultMiddleware().concat([socketMiddleware]);
-  },
+  // middleware(getDefaultMiddleware) {
+  //   return getDefaultMiddleware().concat([socketMiddleware]);
+  // },
 });

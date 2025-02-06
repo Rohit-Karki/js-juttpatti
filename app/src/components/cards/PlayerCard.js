@@ -5,10 +5,7 @@ import { ImagesAssets } from "../../../assets";
 export default function PlayerCard({ name, score, avatar, isSearching }) {
   return (
     <View style={styles.container}>
-      <Image
-        source={ImagesAssets.Person_Icon}
-        style={styles.avatar}
-      />
+      <Image source={ImagesAssets.Person_Icon} style={styles.avatar} />
       <Text style={styles.name}>{isSearching ? "Matching..." : name}</Text>
       {/* {score !== undefined && (
         <View style={styles.scoreContainer}>
@@ -19,31 +16,33 @@ export default function PlayerCard({ name, score, avatar, isSearching }) {
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
-    borderRadius: 12,
-    padding: 8,
     flexDirection: "row",
     alignItems: "center",
-    marginHorizontal: 4,
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
   },
   avatar: {
-    width: 300,
-    height: 300,
-    borderRadius: 20,
-    marginRight: 8,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 12,
+  },
+  infoContainer: {
+    flex: 1,
   },
   name: {
     color: "white",
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "600",
   },
   scoreContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginLeft: 8,
+    marginTop: 4,
   },
   score: {
     color: "#FFD700",

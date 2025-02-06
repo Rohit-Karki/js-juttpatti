@@ -38,12 +38,11 @@ const gameState = {
   winner: null, // ID or name of the winner
 };
 
-export default function get_init_game_state(no_of_players = 4) {
+export default function get_init_game_state(no_of_players = 4, players) {
   const initial_state = {
     noOfPlayers: no_of_players,
-    players: [
-      // Add more players as needed
-    ],
+    // Add more players as needed
+    players: players,
     deck: [], // Cards remaining in the deck
     tableCards: [], // Cards currently on the table
     currentTurn: 0, // Index of the player whose turn it is
