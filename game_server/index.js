@@ -2,7 +2,8 @@ import express from "express";
 import { createServer } from "http";
 import cors from "cors";
 import { Server } from "socket.io";
-import get_init_game_state from "./game_state/get_init_game_state.js";
+// import get_init_game_state from "./game_state/get_init_game_state.js";
+import get_init_game_state from "./core/Card.js";
 // const { get_init_game_state } = require("./game_state");
 
 function nextTurn() {
@@ -73,7 +74,7 @@ app.post("/api/rooms/create", (req, res) => {
 
 io.on("connection", (socket) => {
   console.log(`connect: ${socket.id}`, socket.request.headers);
-  const data = get_init_game_state();
+  // const data = get_init_game_state();
 
   socket.on("disconnect", () => {
     console.log(`disconnect: ${socket.id}`);
@@ -117,6 +118,9 @@ io.on("connection", (socket) => {
       room.players.push({
         userId,
         userName,
+        cards: [],
+        score: 0,
+        isTurn: false, // First player starts the turn
         socketId: socket.id,
       });
     }
@@ -143,7 +147,7 @@ io.on("connection", (socket) => {
     console.log("game starting initial state");
     // broadcast the inital state
     const playersInRoomId = rooms.get(roomId).players;
-    const initial_state = get_init_game_state(4, playersInRoomId);
+    const initial_state = get_init_game_state(playersInRoomId, 4);
     io.to(roomId).emit("initial_state", { initial_state });
   });
 });

@@ -1,9 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { View, StyleSheet, Alert, Button, TextInput } from "react-native";
-import { useSelector } from "react-redux";
-import { socket } from "../socket";
+import { useDispatch, useSelector } from "react-redux";
+import { connectToSocket, socket } from "../socket";
+import { useNavigation } from "@react-navigation/native";
+import { initGame } from "../gamelogic/redux/slices/cardSlice";
 
 export default function JoinRoom() {
+  const dispatch = useDispatch();
+  const navigation = useNavigation();
   const userData = useSelector((state) => state.user);
   const [roomCode, setRoomCode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -42,6 +46,17 @@ export default function JoinRoom() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    connectToSocket();
+    socket.on("initial_state", ({ initial_state }) => {
+      // Alert.alert("Game is starting!", "All players have joined.");
+      console.log(initial_state);
+      dispatch(initGame({ initialState: initial_state }));
+      // Navigate to game screen or start game logic here
+      navigation.navigate("JSGame");
+    });
+  }, []);
 
   return (
     <View style={styles.container}>

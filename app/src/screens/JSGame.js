@@ -10,9 +10,10 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { useDispatch, useSelector } from "react-redux";
 import { socket } from "../socket";
-import Card from "../gamelogic/Card";
+import Card from "../components/cards/Card";
 import { ImagesAssets } from "../../assets";
 import { initGame } from "../gamelogic/redux/slices/cardSlice";
+import PlayerCardGroup from "../components/cards/PlayerCardGroup";
 
 export default function JSGame() {
   const dispatch = useDispatch();
@@ -23,49 +24,27 @@ export default function JSGame() {
     return state.game;
   });
 
+  const userState = useSelector((state) => {
+    return state.user;
+  });
+
+  console.log(state);
+  console.log(userState);
+
   useEffect(() => {
-    if (socket.connected) {
-      onConnect();
+    if (!socket.connected) {
+      // console.log("Connect")
+      // onConnect();
     }
     // console.log(socket.active);
-
-    function onConnect() {
-      setIsConnected(true);
-      setTransport(socket.io.engine.transport.name);
-
-      socket.io.engine.on("upgrade", (transport) => {
-        setTransport(transport.name);
-      });
-
-      socket.emit("game_start");
-    }
-    function onDisconnect() {
-      setIsConnected(false);
-      setTransport("N/A");
-    }
-
-    socket.on("connect", onConnect);
-    socket.on("disconnect", onDisconnect);
-
-    socket.on("initial_state", (value) => {
-      setInitialState(value);
-    });
-
-    console.log(state);
     return () => {
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
     };
   }, []);
 
-  function setInitialState(initial_state) {
-    // get the initial state from the server and use that to
-    dispatch(initGame(initial_state));
-
-    // socket.emit("hello", "world");
-
-    // socket.emit("initial_state", state);
-  }
+  const player = state.players.find((p) => p.userId === userState.userId);
+  console.log(player);
 
   return (
     <View style={styles.container}>
@@ -76,6 +55,10 @@ export default function JSGame() {
       />
 
       <View style={styles.cards}>
+        <PlayerCardGroup playerCards={player.cards} />
+
+        {/* 
+
         <Button
           onPress={() => {
             console.log("pick card");
@@ -94,7 +77,7 @@ export default function JSGame() {
         <Card imageSrc={ImagesAssets.Clovers_4_white} />
         <Card imageSrc={ImagesAssets.Clovers_4_white} />
         <Card imageSrc={ImagesAssets.Clovers_4_white} />
-        <Card imageSrc={ImagesAssets.Clovers_4_white} />
+        <Card imageSrc={ImagesAssets.Clovers_4_white} /> */}
       </View>
       <View>
         <Text>Status: {isConnected ? "connected" : "disconnected"}</Text>
