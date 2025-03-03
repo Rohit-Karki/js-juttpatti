@@ -9,15 +9,17 @@ import {
   Button,
 } from "react-native";
 import { Coins, Wifi } from "lucide-react-native";
-import PlayerCard from "../components/cards/PlayerCard";
+import Player from "../components/cards/Player";
 import { connectToSocket, socket } from "../socket";
 import {
   joinRoom,
   pushUserToRoom,
 } from "../gamelogic/redux/slices/socketSlice";
 import { initGame } from "../gamelogic/redux/slices/cardSlice";
+import { useNavigation } from "@react-navigation/native";
 
 export default function GameLobby() {
+  const navigation = useNavigation();
   const dispatch = useDispatch();
   const [searchingDots] = useState(new Animated.Value(0));
   const userData = useSelector((state) => {
@@ -28,8 +30,8 @@ export default function GameLobby() {
   const socketData = useSelector((state) => state.socket);
   const players = socketData.joinedInRoomPlayers;
 
-  console.log(gameData);
-  console.log(players);
+  // console.log(gameData);
+  // console.log(players);
 
   const emitJoinRoom = (roomId, userId, userName) => {
     console.log(roomId, userId, userName);
@@ -45,7 +47,7 @@ export default function GameLobby() {
 
     // Socket event listeners
     socket.on("player_joined", ({ players }) => {
-      console.log("new player joined", players);
+      // console.log("new player joined", players);
 
       dispatch(pushUserToRoom({ players: players }));
     });
@@ -57,8 +59,9 @@ export default function GameLobby() {
 
     socket.on("initial_state", ({ initial_state }) => {
       // Alert.alert("Game is starting!", "All players have joined.");
-      console.log(initial_state);
+      // console.log(initial_state);
       dispatch(initGame({ initialState: initial_state }));
+      navigation.navigate("JSGame");
       // Navigate to game screen or start game logic here
     });
 
@@ -76,7 +79,7 @@ export default function GameLobby() {
   }, []);
 
   function startGameButtonClick() {
-    console.log("start the game", socketData.joinedRoomId);
+    // console.log("start the game", socketData.joinedRoomId);
     socket.emit("game_start", socketData.joinedRoomId);
   }
 
@@ -100,7 +103,7 @@ export default function GameLobby() {
           console.log("join room", data.roomId);
           // Join the Socket.IO room
           console.log(userData);
-          emitJoinRoom(data.roomId, userData.userName, userData.userId);
+          emitJoinRoom(data.roomId, userData.userId, userData.userName);
 
           dispatch(joinRoom({ roomId: data.roomId }));
         }
@@ -152,7 +155,7 @@ export default function GameLobby() {
 
       <ScrollView style={styles.playersContainer}>
         {players.map((player) => (
-          <PlayerCard
+          <Player
             key={player.userId}
             name={player.userName}
             avatar="/placeholder.svg?height=60&width=60"

@@ -2,7 +2,7 @@ import { View, Text, Image, StyleSheet } from "react-native";
 import { Trophy } from "lucide-react-native";
 import { ImagesAssets } from "../../../assets";
 
-export default function PlayerCard({ name, score, avatar, isSearching }) {
+export default function Player({ name, score, avatar, isSearching }) {
   return (
     <View style={styles.container}>
       <Image source={ImagesAssets.Person_Icon} style={styles.avatar} />
