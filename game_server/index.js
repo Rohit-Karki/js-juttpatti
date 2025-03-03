@@ -2,10 +2,7 @@ import express from "express";
 import { createServer } from "http";
 import cors from "cors";
 import { Server } from "socket.io";
-import redux from "redux";
-// import get_init_game_state from "./game_state/get_init_game_state.js";
-import get_init_game_state from "./core/Card.js";
-// const { get_init_game_state } = require("./game_state");
+import { GameEngine } from "./GameEngine.js";
 
 function nextTurn() {
   // Determine the next player based on game rules
@@ -58,11 +55,12 @@ app.post("/api/rooms/create", (req, res) => {
   let availableRoom = null;
 
   if (!availableRoom) {
-    const store = redux.createStore(reducer);
-    server.startServer(store);
+    // First the client only asks to create a room so no need to add the player to the room as well as gameEngine
+    const players = [];
+
     availableRoom = `room_${Date.now()}`;
     rooms.set(availableRoom, {
-      store,
+      gameEngine: null,
       players: [],
       status: "waiting",
     });
@@ -117,7 +115,6 @@ io.on("connection", (socket) => {
       return;
     }
 
-    // Add player to room
     if (!room.players.find((p) => p.userId === userId)) {
       room.players.push({
         userId,
@@ -138,25 +135,26 @@ io.on("connection", (socket) => {
     });
 
     // If room is full (4 players), start the game
-    if (room.players.length === 4) {
-      room.status = "starting";
-      io.to(roomId).emit("game_starting", {
-        players: room.players,
-        roomId,
-      });
-    }
+    // if (room.players.length === 4) {
+    //   room.status = "starting";
+    //   io.to(roomId).emit("game_starting", {
+    //     players: room.players,
+    //     roomId,
+    //   });
+    // }
   });
 
   socket.on("game_start", (roomId) => {
     console.log("game starting initial state");
     // broadcast the inital state
     const playersInRoomId = rooms.get(roomId).players;
-    const initial_state = get_init_game_state(playersInRoomId, 4);
-    // Get state from the redux store and dispatch the action to
-    // const storeData =
-
-    rooms.get(roomID).store.subscribe(() => {});
-    io.to(roomId).emit("initial_state", { initial_state });
+    const gameEngine = new GameEngine(playersInRoomId, playersInRoomId.length);
+    const room = rooms.get(roomId);
+    room.gameEngine = gameEngine;
+    console.log(gameEngine.getState());
+    io.to(roomId).emit("initial_state", {
+      initialState: gameEngine.getState(),
+    });
   });
 });
 

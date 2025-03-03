@@ -64,6 +64,7 @@ export default function get_init_game_state(
   no_of_players = 4,
   numCards = 7
 ) {
+  console.log(players, no_of_players);
   let deck = createDeck();
   shuffleDeck(deck);
 
