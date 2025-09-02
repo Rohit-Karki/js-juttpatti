@@ -57,10 +57,10 @@ export default function GameLobby() {
       dispatch(pushUserToRoom({ player: remainingPlayers }));
     });
 
-    socket.on("initial_state", ({ initial_state }) => {
+    socket.on("initial_state", ({ initialState }) => {
       // Alert.alert("Game is starting!", "All players have joined.");
       // console.log(initial_state);
-      dispatch(initGame({ initialState: initial_state }));
+      dispatch(initGame({ initialState }));
       navigation.navigate("JSGame");
       // Navigate to game screen or start game logic here
     });

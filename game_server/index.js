@@ -61,10 +61,10 @@ app.post("/api/rooms/create", (req, res) => {
     availableRoom = `room_${Date.now()}`;
     rooms.set(availableRoom, {
       gameEngine: null,
-      players: [],
+      players,
       status: "waiting",
     });
-    console.log(rooms);
+
   }
 
   // Return the room information to the client
@@ -82,8 +82,35 @@ io.on("connection", (socket) => {
     console.log(`disconnect: ${socket.id}`);
   });
 
+  socket.on("gameAction", (action) => {
+    console.log("Received game action:", action);
+    
+    const { roomId } = action.payload;
+    const room = rooms.get(roomId);
+
+    if (room && room.gameEngine) {
+      // Dispatch the action to the game engine
+      room.gameEngine.dispatch(action);
+    } else {
+      socket.emit("error", { message: "Game not found or not started" });
+    }
+  });
+
+  // Keep the old pick_card handler for backward compatibility
   socket.on("pick_card", (action) => {
     console.log(action);
+    
+    const { roomId, userId } = action;
+    const room = rooms.get(roomId);
+
+    if (room && room.gameEngine) {
+      // Add the user ID to the action for validation in the GameEngine
+      action.payload.userId = userId;
+      // Dispatch the action to the game engine
+      room.gameEngine.dispatch(action);
+    } else {
+      socket.emit("error", { message: "Game not found or not started" });
+    }
   });
 
   /*
@@ -146,9 +173,9 @@ io.on("connection", (socket) => {
 
   socket.on("game_start", (roomId) => {
     console.log("game starting initial state");
-    // broadcast the inital state
+    // broadcast the initial state
     const playersInRoomId = rooms.get(roomId).players;
-    const gameEngine = new GameEngine(playersInRoomId, playersInRoomId.length);
+    const gameEngine = new GameEngine(playersInRoomId, playersInRoomId.length, io, roomId);
     const room = rooms.get(roomId);
     room.gameEngine = gameEngine;
     console.log(gameEngine.getState());

@@ -63,5 +63,3 @@ export default function get_init_game_state(no_of_players = 4, players) {
   // })
   return initial_state;
 }
-
-// module.exports = { get_init_game_state: get_init_game_state }
