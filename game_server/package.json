@@ -3,17 +3,25 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "type": "module",
-  "author": "",
+  "author": "Rohit Raj Karki",
   "license": "ISC",
-  "description": "",
+  "description": "Multiplayer card game server with deterministic game engine",
   "dependencies": {
     "@types/node": "^22.10.2",
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "redux": "^5.0.1",
     "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
   }
 }

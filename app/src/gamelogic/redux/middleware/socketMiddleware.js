@@ -1,103 +1,38 @@
-import { Middleware } from "redux";
-// Actions
-import {
-  connectionEstablished,
-  joinRoom,
-  leaveRoom,
-  initSocket,
-  connectionLost,
-} from "../slices/socketSlice";
+import { socket } from "../../socket";
 
-import { initGame, pickCard, dropCard } from "../slices/cardSlice";
-// Socket Factory
-import SocketFactory from "../../SocketFactory";
+// Actions that should be forwarded to the server
+const SERVER_ACTIONS = [
+  'PICK_CARD',
+  'DROP_CARD',
+  'START_GAME',
+  'JOIN_ROOM',
+  'CREATE_ROOM'
+];
 
-const SocketEvent = {
-  Connect: "connect",
-  Disconnect: "disconnect",
-  // Emit events
-  JoinRoom: "join-room",
-  LeaveRoom: "leave-room",
-  // On events
-  Error: "err",
+// Actions that come from the server (should not be forwarded)
+const SERVER_RESPONSE_ACTIONS = [
+  'gameAction',
+  'gameStateUpdate',
+  'initial_state',
+  'player_joined',
+  'game_starting'
+];
 
-  InitGame: "init-game",
-  PickCard: "pick-card",
-  DropCard: "drop-card",
-};
-
-const socketMiddleware = (store) => {
-  let socket;
-
-  return (next) => (action) => {
-    // Middleware logic for the `initSocket` action
-    if (initSocket.match(action)) {
-      if (!socket && typeof window !== "undefined") {
-        // Client-side-only code
-        // Create/ Get Socket Socket
-        socket = SocketFactory.create();
-
-        socket.socket.on(SocketEvent.Connect, () => {
-          store.dispatch(connectionEstablished());
-        });
-
-        // handle all Error events
-        socket.socket.on(SocketEvent.Error, (message) => {
-          console.error(message);
-        });
-
-        // Handle disconnect event
-        socket.socket.on(SocketEvent.Disconnect, (reason) => {
-          store.dispatch(connectionLost());
-        });
-
-        // Handle pickCard event
-        socket.socket.on(SocketEvent.Disconnect, (reason) => {
-          store.dispatch(connectionLost());
-        });
-      }
-    }
-
-    // handle the joinRoom action
-    if (joinRoom.match(action) && socket) {
-      let room = action.payload.room;
-      // Join room
-      socket.socket.emit(SocketEvent.JoinRoom, room);
-      // Then Pass on to the next middleware to handle state
-      // ...
-    }
-
-    // handle leaveRoom action
-    if (leaveRoom.match(action) && socket) {
-      let room = action.payload.room;
-      socket.socket.emit(SocketEvent.LeaveRoom, room);
-      // Then Pass on to the next middleware to handle state
-      // ...
-    }
-
-    // Handle the pick Card to the server
-    if (initGame.match(action) && socket) {
-      // let room = action.payload.room;
-      let gameState = action.payload.gameState;
-      socket.socket.emit(SocketEvent.PickCard, gameState);
-    }
-
-    // Handle the pick Card to the server
-    if (pickCard.match(action) && socket) {
-      // let room = action.payload.room;
-      let gameState = action.payload.pickedCardState;
-      socket.socket.emit(SocketEvent.PickCard, room, gameState);
-    }
-
-    // Handle the drop Card to the server
-    if (dropCard.match(action) && socket) {
-      let room = action.payload.room;
-      let droppedCardState = action.payload.droppedCardState;
-      socket.socket.emit(SocketEvent.PickCard, room, droppedCardState);
-    }
-
-    next(action);
-  };
+const socketMiddleware = store => next => action => {
+  // First, let the action go through to update local state optimistically
+  const result = next(action);
+  
+  // Check if this action should be forwarded to the server
+  if (SERVER_ACTIONS.includes(action.type) && !action.meta?.fromServer) {
+    // Forward the action to the server
+    socket.emit('gameAction', {
+      type: action.type,
+      payload: action.payload,
+      roomId: store.getState().game.roomId || store.getState().room?.roomId
+    });
+  }
+  
+  return result;
 };
 
 export default socketMiddleware;

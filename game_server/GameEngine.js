@@ -2,9 +2,10 @@ import { EventEmitter } from "node:events";
 import get_init_game_state from "./core/Card.js";
 
 export class GameEngine extends EventEmitter {
-  constructor(playersInRoomId, len) {
+  constructor(playersInRoomId, len, io, roomId) {
     super();
-    console.log("rohit");
+    this.io = io;
+    this.roomId = roomId;
     this.state = get_init_game_state(playersInRoomId, len);
 
     // Register "reducers" (event handlers)
@@ -16,11 +17,20 @@ export class GameEngine extends EventEmitter {
   dispatch(action) {
     this.emit(action.type, action.payload);
   }
+
+  broadcast(action) {
+    // Send the action to all clients in the room via Socket.IO
+    this.io.to(this.roomId).emit("gameAction", action);
+    // Also emit the updated state
+    this.io.to(this.roomId).emit("gameStateUpdate", this.state);
+  }
+
   startGame() {
     this.state.status = "playing";
     this.state.turnIndex = 0;
     this.state.players[0].isTurn = true;
     this.logState("Game Started");
+    this.broadcast({ type: "START_GAME", payload: this.state });
   }
 
   pickCard({ userId, card }) {
@@ -28,7 +38,8 @@ export class GameEngine extends EventEmitter {
     if (player && player.isTurn) {
       player.cards.push(card);
       this.logState(`${player.userName} picked a card`);
-      this.dispatch({ type: "NEXT_TURN" });
+      // this.dispatch({ type: "NEXT_TURN" });
+      this.broadcast({ type: "PICK_CARD", payload: { userId, card } });
     }
   }
 
@@ -40,12 +51,14 @@ export class GameEngine extends EventEmitter {
     this.logState(
       `Next turn: ${this.state.players[this.state.turnIndex].userName}`
     );
+    this.broadcast({ type: "NEXT_TURN", payload: { turnIndex: this.state.turnIndex } });
   }
 
   logState(message) {
     console.log(`[GameEngine] ${message}`);
     console.log(this.state);
   }
+  
   getState() {
     return this.state;
   }
