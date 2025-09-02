@@ -4,7 +4,7 @@ A React Native multiplayer card game with a Node.js backend, implementing a **de
 
 ## 🏗️ Architecture Overview
 
-This project implements a sophisticated multiplayer game architecture inspired by professional gaming companies like Bhoos Games:
+This project implements a sophisticated multiplayer game architecture inspired by professional gaming companies:
 
 ### **Client-Server Synchronization Pattern**
 
