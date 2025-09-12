@@ -2,16 +2,37 @@ import { EventEmitter } from "node:events";
 import get_init_game_state from "./core/Card.js";
 
 export class GameEngine extends EventEmitter {
-  constructor(playersInRoomId, len, io, roomId) {
+  constructor(playersInRoomId, len, io, roomId, stateManager) {
     super();
     this.io = io;
     this.roomId = roomId;
+    this.stateManager = stateManager;
     this.state = get_init_game_state(playersInRoomId, len);
 
     // Register "reducers" (event handlers)
     this.on("START_GAME", this.startGame.bind(this));
     this.on("PICK_CARD", this.pickCard.bind(this));
     this.on("NEXT_TURN", this.nextTurn.bind(this));
+
+    // Save initial state
+    this.saveState();
+  }
+
+  async saveState() {
+    if (this.stateManager) {
+      await this.stateManager.saveGameState(this.roomId, this.state);
+    }
+  }
+
+  async loadState() {
+    if (this.stateManager) {
+      const savedState = await this.stateManager.getGameState(this.roomId);
+      if (savedState) {
+        this.state = savedState;
+        return true;
+      }
+    }
+    return false;
   }
 
   dispatch(action) {
@@ -23,6 +44,9 @@ export class GameEngine extends EventEmitter {
     this.io.to(this.roomId).emit("gameAction", action);
     // Also emit the updated state
     this.io.to(this.roomId).emit("gameStateUpdate", this.state);
+    
+    // Save state after broadcasting
+    this.saveState();
   }
 
   startGame() {
@@ -61,5 +85,12 @@ export class GameEngine extends EventEmitter {
   
   getState() {
     return this.state;
+  }
+
+  // Cleanup when game ends
+  async cleanup() {
+    if (this.stateManager) {
+      await this.stateManager.deleteGameState(this.roomId);
+    }
   }
 }

@@ -3,6 +3,11 @@ import { createServer } from "http";
 import cors from "cors";
 import { Server } from "socket.io";
 import { GameEngine } from "./GameEngine.js";
+import GameStateManager from "./database/GameStateManager.js";
+import InMemoryStateManager from "./database/InMemoryStateManager.js";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 function nextTurn() {
   // Determine the next player based on game rules
@@ -36,7 +41,18 @@ const io = new Server(httpServer, {
   },
 });
 
-// Store active rooms and their players
+// Initialize state manager (Redis for production, in-memory for development)
+let stateManager;
+
+// try {
+//   stateManager = new GameStateManager();
+//   console.log('Using Redis state manager');
+// } catch (error) {
+//   console.log('Redis not available, falling back to in-memory storage');
+// }
+stateManager = new InMemoryStateManager();
+
+// Store active rooms and their players (for active connections)
 const rooms = new Map();
 
 app.use(cors());
@@ -64,7 +80,6 @@ app.post("/api/rooms/create", (req, res) => {
       players,
       status: "waiting",
     });
-
   }
 
   // Return the room information to the client
@@ -84,7 +99,7 @@ io.on("connection", (socket) => {
 
   socket.on("gameAction", (action) => {
     console.log("Received game action:", action);
-    
+
     const { roomId } = action.payload;
     const room = rooms.get(roomId);
 
@@ -99,7 +114,7 @@ io.on("connection", (socket) => {
   // Keep the old pick_card handler for backward compatibility
   socket.on("pick_card", (action) => {
     console.log(action);
-    
+
     const { roomId, userId } = action;
     const room = rooms.get(roomId);
 
@@ -171,11 +186,36 @@ io.on("connection", (socket) => {
     // }
   });
 
-  socket.on("game_start", (roomId) => {
+  socket.on("game_start", async (roomId) => {
     console.log("game starting initial state");
-    // broadcast the initial state
-    const playersInRoomId = rooms.get(roomId).players;
-    const gameEngine = new GameEngine(playersInRoomId, playersInRoomId.length, io, roomId);
+
+    // Try to load existing game state first
+    const existingState = await stateManager.getGameState(roomId);
+    let gameEngine;
+
+    if (existingState) {
+      console.log("Loading existing game state");
+      const playersInRoomId = rooms.get(roomId).players;
+      gameEngine = new GameEngine(
+        playersInRoomId,
+        playersInRoomId.length,
+        io,
+        roomId,
+        stateManager
+      );
+      gameEngine.state = existingState;
+    } else {
+      console.log("Creating new game state");
+      const playersInRoomId = rooms.get(roomId).players;
+      gameEngine = new GameEngine(
+        playersInRoomId,
+        playersInRoomId.length,
+        io,
+        roomId,
+        stateManager
+      );
+    }
+
     const room = rooms.get(roomId);
     room.gameEngine = gameEngine;
     console.log(gameEngine.getState());
@@ -185,8 +225,51 @@ io.on("connection", (socket) => {
   });
 });
 
-httpServer.listen(3000, () => {
-  console.log("started");
+const PORT = process.env.PORT || 3000;
+
+httpServer.listen(PORT, () => {
+  console.log(`Server started on port ${PORT}`);
+});
+
+// Graceful shutdown
+process.on("SIGINT", async () => {
+  console.log("\nReceived SIGINT. Shutting down gracefully...");
+
+  // Cleanup all active games
+  for (const [roomId, room] of rooms) {
+    if (room.gameEngine) {
+      await room.gameEngine.cleanup();
+    }
+  }
+
+  // Close Redis connection
+  await stateManager.close();
+
+  // Close server
+  httpServer.close(() => {
+    console.log("Server closed");
+    process.exit(0);
+  });
+});
+
+process.on("SIGTERM", async () => {
+  console.log("\nReceived SIGTERM. Shutting down gracefully...");
+
+  // Cleanup all active games
+  for (const [roomId, room] of rooms) {
+    if (room.gameEngine) {
+      await room.gameEngine.cleanup();
+    }
+  }
+
+  // Close Redis connection
+  await stateManager.close();
+
+  // Close server
+  httpServer.close(() => {
+    console.log("Server closed");
+    process.exit(0);
+  });
 });
 
 // app.listen(API_PORT, () => {

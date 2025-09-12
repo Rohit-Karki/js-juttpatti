@@ -39,6 +39,7 @@ This project implements a sophisticated multiplayer game architecture inspired b
 - npm or yarn
 - React Native development environment
 - Expo CLI
+- Redis server (for production) or use in-memory storage (for development)
 
 ### Installation
 
@@ -60,13 +61,24 @@ This project implements a sophisticated multiplayer game architecture inspired b
    npm install
    ```
 
-4. **Start the server**
+4. **Setup Redis (Optional for development)**
+   ```bash
+   # Install Redis on Ubuntu/Debian
+   sudo apt-get install redis-server
+   
+   # Or use Docker
+   docker run -d -p 6379:6379 redis:alpine
+   
+   # Or skip Redis for development (will use in-memory storage)
+   ```
+
+5. **Start the server**
    ```bash
    cd ../game_server
    npm start
    ```
 
-5. **Start the client**
+6. **Start the client**
    ```bash
    cd ../app
    npm start

@@ -1,23 +1,23 @@
 class Card {
-  constructor(number, suit, color) {
-    this.number = number;
-    this.suit = suit;
+  constructor(type, value, color) {
+    this.type = type; // Changed from suit to type to match UI
+    this.value = value; // Changed from number to value to match UI
     this.color = color;
   }
 
   toString() {
-    return `${this.number} of ${this.suit} (${this.color})`;
+    return `${this.value} of ${this.type} (${this.color})`;
   }
 }
 
 function createDeck() {
-  const suits = [
-    { name: "hearts", color: "red" },
-    { name: "tiles", color: "red" },
-    { name: "clovers", color: "red" },
-    { name: "pikes", color: "red" },
+  const types = [
+    { name: "Hearts", color: "red" },
+    { name: "Tiles", color: "red" },
+    { name: "Clovers", color: "black" },
+    { name: "Pikes", color: "black" },
   ];
-  const numbers = [
+  const values = [
     "A",
     "2",
     "3",
@@ -33,30 +33,23 @@ function createDeck() {
     "King",
   ];
 
-  let deck = [];
-  for (let suit of suits) {
-    for (let number of numbers) {
-      deck.push(new Card(number, suit.name, suit.color));
-    }
-  }
-  return deck;
+  return types.flatMap((type) =>
+    values.map((value) => new Card(type.name, value, type.color))
+  );
 }
 
 function shuffleDeck(deck) {
-  for (let i = deck.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [deck[i], deck[j]] = [deck[j], deck[i]];
-  }
+  return [...deck].sort(() => Math.random() - 0.5);
 }
 
 function distributeCards(players, deck, numCards) {
-  for (let i = 0; i < numCards; i++) {
-    for (let player of players) {
-      if (deck.length > 0) {
-        player.cards.push(deck.pop());
-      }
-    }
-  }
+  const remainingDeck = [...deck];
+  return players.map((player) => ({
+    ...player,
+    cards: Array.from({ length: numCards }, () =>
+      remainingDeck.length > 0 ? remainingDeck.pop() : null
+    ).filter(Boolean),
+  }));
 }
 
 export default function get_init_game_state(
@@ -64,16 +57,14 @@ export default function get_init_game_state(
   no_of_players = 4,
   numCards = 7
 ) {
-  console.log(players, no_of_players);
-  let deck = createDeck();
-  shuffleDeck(deck);
-
-  distributeCards(players, deck, numCards);
+  const initialDeck = createDeck();
+  const shuffledDeck = shuffleDeck(initialDeck);
+  const playersWithCards = distributeCards(players, shuffledDeck, numCards);
 
   return {
     noOfPlayers: no_of_players,
-    players: players,
-    deck: deck, // Remaining deck after distribution
+    players: playersWithCards,
+    deck: shuffledDeck.slice(players.length * numCards),
     tableCards: [],
     currentTurn: 0,
     gameStatus: "waiting",

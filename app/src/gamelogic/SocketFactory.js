@@ -21,3 +21,5 @@ class SocketFactory {
     return socketConnection;
   }
 }
+
+export default socketConnection;
