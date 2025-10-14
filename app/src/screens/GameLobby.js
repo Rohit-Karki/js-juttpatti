@@ -47,7 +47,7 @@ export default function GameLobby() {
 
     // Socket event listeners
     socket.on("player_joined", ({ players }) => {
-      // console.log("new player joined", players);
+      console.log("new player joined", players);
 
       dispatch(pushUserToRoom({ players: players }));
     });
@@ -58,7 +58,7 @@ export default function GameLobby() {
     });
 
     socket.on("initial_state", ({ initialState }) => {
-      // Alert.alert("Game is starting!", "All players have joined.");
+      console.log("Game is starting!", "All players have joined.");
       // console.log(initial_state);
       dispatch(initGame({ initialState }));
       navigation.navigate("JSGame");

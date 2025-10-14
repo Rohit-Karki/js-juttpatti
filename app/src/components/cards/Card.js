@@ -77,7 +77,7 @@ export default function Card({ imageSrc }) {
   return (
     <GestureDetector gesture={pan}>
       <Animated.View style={[animatedStyles]}>
-        <Animated.Image style={[styles.cardImage]} source={imageSrc} />
+        <Image style={styles.cardImage} source={imageSrc} />
       </Animated.View>
     </GestureDetector>
   );
