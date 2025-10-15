@@ -5,29 +5,29 @@ const initialState = gameState;
 
 // Thunk action creators for client-server synchronization
 export const pickCardAsync = createAsyncThunk(
-  'card/pickCardAsync',
+  "card/pickCardAsync",
   async ({ playerId, card, roomId }, { dispatch, getState }) => {
     // Optimistically update local state
-    dispatch(pickCard({ playerId, card }));
-    
+    dispatch(pickCard({ playerId, card, roomId }));
+
     // The socket middleware will automatically forward this to the server
-    return { playerId, card };
+    return { playerId, card, roomId };
   }
 );
 
 export const dropCardAsync = createAsyncThunk(
-  'card/dropCardAsync',
+  "card/dropCardAsync",
   async ({ playerId, card, roomId }, { dispatch, getState }) => {
     // Optimistically update local state
-    dispatch(dropCard({ playerId, card }));
-    
+    dispatch(dropCard({ playerId, card, roomId }));
+
     // The socket middleware will automatically forward this to the server
-    return { playerId, card };
+    return { playerId, card, roomId };
   }
 );
 
 export const startGameAsync = createAsyncThunk(
-  'card/startGameAsync',
+  "card/startGameAsync",
   async (roomId, { dispatch, getState }) => {
     // The socket middleware will automatically forward this to the server
     return { roomId };
@@ -46,17 +46,17 @@ const gameSlice = createSlice({
     },
     pickCard: (state, action) => {
       const { playerId, card } = action.payload;
-      const player = state.players.find(p => p.id === playerId);
+      const player = state.players.find((p) => p.id === playerId);
       if (player) {
         player.cards.push(card);
         state.deck = state.deck.filter((c) => c !== card);
       }
     },
     dropCard: (state, action) => {
-      const { playerId, card } = action.payload;
-      const player = state.players.find(p => p.id === playerId);
+      const { playerId, card, roomId } = action.payload;
+      const player = state.players.find((p) => p.id === playerId);
       if (player) {
-        player.cards = player.cards.filter(c => c !== card);
+        player.cards = player.cards.filter((c) => c !== card);
         state.tableCards.push(card);
       }
     },
@@ -66,8 +66,8 @@ const gameSlice = createSlice({
     },
     setPlayerTurn: (state, action) => {
       const { playerId } = action.payload;
-      state.players.forEach(p => p.isTurn = false);
-      const player = state.players.find(p => p.id === playerId);
+      state.players.forEach((p) => (p.isTurn = false));
+      const player = state.players.find((p) => p.id === playerId);
       if (player) {
         player.isTurn = true;
       }
@@ -75,7 +75,7 @@ const gameSlice = createSlice({
     // Handle server actions (with meta.fromServer flag)
     serverPickCard: (state, action) => {
       const { playerId, card } = action.payload;
-      const player = state.players.find(p => p.id === playerId);
+      const player = state.players.find((p) => p.id === playerId);
       if (player) {
         player.cards.push(card);
         state.deck = state.deck.filter((c) => c !== card);
@@ -83,24 +83,24 @@ const gameSlice = createSlice({
     },
     serverDropCard: (state, action) => {
       const { playerId, card } = action.payload;
-      const player = state.players.find(p => p.id === playerId);
+      const player = state.players.find((p) => p.id === playerId);
       if (player) {
-        player.cards = player.cards.filter(c => c !== card);
+        player.cards = player.cards.filter((c) => c !== card);
         state.tableCards.push(card);
       }
-    }
+    },
   },
 });
 
 // Don't have to define actions, they are automatically generated
-export const { 
-  initGame, 
-  pickCard, 
-  dropCard, 
-  updateGameState, 
+export const {
+  initGame,
+  pickCard,
+  dropCard,
+  updateGameState,
   setPlayerTurn,
   serverPickCard,
-  serverDropCard
+  serverDropCard,
 } = gameSlice.actions;
 // Export the reducer for this slice
 export default gameSlice.reducer;

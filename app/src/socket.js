@@ -1,13 +1,13 @@
 import { io } from "socket.io-client";
 import { store } from "./gamelogic/redux/GameStore";
-import { 
-  updateGameState, 
-  serverPickCard, 
-  serverDropCard, 
-  setPlayerTurn 
+import {
+  updateGameState,
+  serverPickCard,
+  serverDropCard,
+  setPlayerTurn,
 } from "./gamelogic/redux/slices/cardSlice";
 
-export const socket = io("http://localhost:3000", {
+export const socket = io("localhost:3000", {
   autoConnect: true,
   transports: ["websocket"],
 }); //	use the IP address of your machine
@@ -15,7 +15,7 @@ export const socket = io("http://localhost:3000", {
 // Handle server game actions
 socket.on("gameAction", (action) => {
   console.log("Received game action from server:", action);
-  
+
   // Dispatch server actions with meta flag to prevent infinite loops
   switch (action.type) {
     case "PICK_CARD":

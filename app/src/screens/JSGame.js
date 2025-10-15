@@ -12,6 +12,11 @@ import { useDispatch, useSelector } from "react-redux";
 import { socket } from "../socket";
 import Card from "../components/cards/Card";
 import { ImagesAssets } from "../../assets";
+import {
+  pickCardAsync,
+  dropCardAsync,
+  startGameAsync,
+} from "../gamelogic/redux/slices/cardSlice";
 import { initGame } from "../gamelogic/redux/slices/cardSlice";
 import PlayerCardGroup from "../components/cards/PlayerCardGroup";
 
@@ -36,6 +41,57 @@ export default function JSGame() {
   const state = useSelector((state) => state.game);
   const userState = useSelector((state) => state.user);
 
+  const handlePickCard = (card) => {
+    // const card = gametate.deck[0]; // Get first card from deck
+    if (card) {
+      dispatch(
+        pickCardAsync({
+          playerId: userState.userId,
+          card: card,
+          roomId: state.roomId,
+        })
+      );
+    }
+  };
+
+  const handleDropCard = (card) => {
+    // Example: Drop a card from player's hand
+    const player = state.players.find((p) => p.userId === userState.userId);
+    if (player && player.cards.length > 0) {
+      // const card = player.cards[0]; // Get first card from hand
+      dispatch(
+        dropCardAsync({
+          playerId: userState.userId,
+          card: card,
+          roomId: state.roomId,
+        })
+      );
+    }
+  };
+
+  const handleStartGame = () => {
+    dispatch(startGameAsync(state.roomId));
+  };
+
+  // Handler for when a card is thrown
+  const handleCardThrown = (cardData) => {
+    console.log("Card thrown:", cardData);
+
+    // Here you would call your backend
+    // socket.emit("pick_card", {
+    //   playerId: userState.userId,
+    //   pickedCard: {
+    //     type: cardData.type,
+    //     value: cardData.value,
+    //     color: cardData.color,
+    //   },
+    // });
+    handleDropCard(cardData);
+
+    // For now, just log it
+    console.log(`Card thrown: ${cardData.type} ${cardData.value}`);
+  };
+
   console.log("state is ", state);
   console.log("userState is ", userState);
 
@@ -57,14 +113,17 @@ export default function JSGame() {
   }, []);
 
   // Get current player
-  const currentPlayer = state.players.find(
+  const currentPlayer = state.players?.find(
     (p) => p.userId === userState.userId
   );
 
   // Get other players (opponents)
-  const opponents = state.players.filter((p) => p.userId !== userState.userId);
+  const opponents =
+    state.players?.filter((p) => p.userId !== userState.userId) || [];
 
   console.log("currentPlayer is ", currentPlayer);
+  console.log("currentPlayer cards:", currentPlayer?.cards);
+  console.log("state.players:", state.players);
 
   return (
     <View style={styles.container}>
@@ -120,7 +179,9 @@ export default function JSGame() {
       </View>
 
       {/* Current Player's Cards - Bottom Area */}
-      {currentPlayer && (
+      {currentPlayer &&
+      currentPlayer.cards &&
+      currentPlayer.cards.length > 0 ? (
         <View style={styles.playerCardsContainer}>
           <View style={styles.playerInfo}>
             <Text style={styles.currentPlayerName}>
@@ -138,9 +199,20 @@ export default function JSGame() {
               <Card
                 key={index}
                 imageSrc={ImagesAssets[`${card.type}_${card.value}_white`]}
+                cardData={card}
+                onCardThrown={handleCardThrown}
               />
             ))}
           </View>
+        </View>
+      ) : (
+        <View style={styles.playerCardsContainer}>
+          <Text style={styles.debugText}>
+            No cards found. User ID: {userState.userId}
+          </Text>
+          <Text style={styles.debugText}>
+            Players: {state.players?.length || 0}
+          </Text>
         </View>
       )}
 
@@ -333,5 +405,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "bold",
     marginTop: 5,
+  },
+  debugText: {
+    color: "#fff",
+    fontSize: 14,
+    marginVertical: 5,
+    textAlign: "center",
   },
 });
